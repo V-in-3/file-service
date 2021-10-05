@@ -1,0 +1,9 @@
+application:
+  elasticsearch:
+    host: localhost
+    port: 9200
+logging:
+  level:
+    com.example.file.service: debug
+    org.springframework.data.elasticsearch.client: trace
+
