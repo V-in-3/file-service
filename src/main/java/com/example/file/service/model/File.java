@@ -9,7 +9,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -24,9 +24,9 @@ public class File {
     @Field(type = FieldType.Long, name = "size")
     private Long size;
     @Field(type = FieldType.Auto, name = "tags")
-    private List<String> tags;
+    private Set<String> tags;
 
-    public void addTags(List<String> tags) {
+    public void addTags(Set<String> tags) {
         if (this.getTags() != null) {
             this.getTags().addAll(tags);
         } else {
@@ -36,5 +36,15 @@ public class File {
 
     public boolean existsTags() {
         return this.getTags() != null && !this.getTags().isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return "File{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", size=" + size +
+                ", tags=" + tags +
+                '}';
     }
 }

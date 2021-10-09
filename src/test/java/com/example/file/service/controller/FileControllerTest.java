@@ -2,6 +2,7 @@ package com.example.file.service.controller;
 
 import com.example.file.service.dto.*;
 import com.example.file.service.model.File;
+import com.example.file.service.repository.FileRepository;
 import com.example.file.service.service.FileService;
 import com.example.file.service.web.exceptions.FileNotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,7 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.ResourceUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.example.file.service.Constants.BASE_URI;
@@ -24,9 +27,7 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FileController.class)
@@ -35,6 +36,9 @@ public class FileControllerTest {
 
     @MockBean
     private FileService fileService;
+
+    @MockBean
+    private FileRepository fileRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -125,9 +129,9 @@ public class FileControllerTest {
     @Test
     void getFilesByFilterSuccess() throws Exception {
         List<File> files = List.of(
-                new File("1", "name1", 12345L, List.of("audio")),
-                new File("2", "name2", 54321L, List.of("audio")),
-                new File("3", "name3", 12345L, List.of("document"))
+                new File("1", "name1", 12345L, Set.of("audio")),
+                new File("2", "name2", 54321L, Set.of("audio")),
+                new File("3", "name3", 12345L, Set.of("document"))
         );
         when(fileService.getAllByFilter(any(), any())).thenReturn(new GetFilesByFilterResponse(5L, files));
 
@@ -145,5 +149,31 @@ public class FileControllerTest {
                 .andExpect(jsonPath("$.page[*].size", containsInAnyOrder(12345, 54321, 12345)))
                 .andExpect(jsonPath("$.page[*].tags").isArray())
                 .andExpect(jsonPath("$.page[*].tags[*]", containsInAnyOrder("audio", "document", "audio")));
+    }
+
+    @Test
+    void getAll() {
+        List<File> files = List.of(
+                new File("1", "name1", 12345L, Set.of("audio")),
+                new File("2", "name2", 54321L, Set.of("video")),
+                new File("3", "name3", 12345L, Set.of("document"))
+        );
+        when(fileService.getAllFilesWithoutPagebale()).thenReturn(new GetAllFilesResponse(files));
+        try {
+            mockMvc.perform(get(BASE_URI + "/all")
+                            .contentType(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$.*", isA(ArrayList.class)))
+                    .andExpect(jsonPath("$.*.[*]", hasSize(3)))
+                    .andExpect(jsonPath("$.*.[*].id", containsInAnyOrder("1", "2", "3")))
+                    .andExpect(jsonPath("$.*.[*].name", containsInAnyOrder("name1", "name2", "name3")))
+                    .andExpect(jsonPath("$.*.[*].size", containsInAnyOrder(12345, 54321, 12345)))
+                    .andExpect(jsonPath("$.*.[*].tags").isArray())
+                    .andExpect(jsonPath("$.*.[*].tags[*]", containsInAnyOrder("audio", "video", "document")));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

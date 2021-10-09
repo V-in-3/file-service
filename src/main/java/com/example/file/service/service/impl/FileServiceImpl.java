@@ -1,5 +1,6 @@
 package com.example.file.service.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.example.file.service.dto.*;
 import com.example.file.service.filter.FileFilter;
 import com.example.file.service.mapper.FileMapper;
@@ -8,12 +9,12 @@ import com.example.file.service.repository.FileRepository;
 import com.example.file.service.service.FileService;
 import com.example.file.service.web.exceptions.FileNotFoundException;
 import com.example.file.service.web.exceptions.TagNotFoundException;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,10 +27,11 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class FileServiceImpl implements FileService {
@@ -80,8 +82,6 @@ public class FileServiceImpl implements FileService {
         return new RemoveTagsResponse(true);
     }
 
-    @SuppressWarnings("unchecked")
-    // todo: It needs to be done
     @Override
     public GetFilesByFilterResponse getAllByFilter(FileFilter filter, Pageable pageable) {
         NativeSearchQueryBuilder query = new NativeSearchQueryBuilder();
@@ -92,8 +92,10 @@ public class FileServiceImpl implements FileService {
         // add pageable
         query.withPageable(pageable != null ? pageable : PageRequest.of(0, 10));
 
-        // todo add q filter
-        //if (filter != null && filter.getQ() != null && !filter.getQ().isBlank()) {}
+        // add q filter
+        if (filter != null && filter.getQ() != null && StringUtils.isNoneBlank(filter.getQ())) {
+            query.withQuery(QueryBuilders.wildcardQuery("name", "*" + filter.getQ() + "*").caseInsensitive(true));
+        }
 
         SearchHits<File> searchHits = elasticsearchRestTemplate.search(query.build(), File.class);
         SearchPage<File> searchPage = SearchHitSupport.searchPageFor(searchHits, pageable);
@@ -103,22 +105,29 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public GetAllFilesResponse getAllFilesWithoutPagebale() throws IOException {
+    public GetAllFilesResponse getAllFilesWithoutPagebale() {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
         SearchRequest searchRequest = new SearchRequest("file");
         searchRequest.source(searchSourceBuilder);
-        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-        List<File> files = new ArrayList<>();
-        for (SearchHit hit : searchResponse.getHits().getHits()) {
-            Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-            File file = new File();
-            file.setId((String) sourceAsMap.get("id"));
-            file.setName((String) sourceAsMap.get("name"));
-            file.setSize(Long.valueOf((Integer) sourceAsMap.get("size")));
-            file.setTags((List<String>) sourceAsMap.get("tags"));
-            files.add(file);
+        SearchResponse searchResponse = null;
+        try {
+            searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        final List<File> files = Stream.of(Objects.requireNonNull(searchResponse).getHits()
+                        .getHits())
+                .map(hit -> JSON.parseObject(hit.getSourceAsString(), File.class))
+                .collect(Collectors.toList());
+
         return new GetAllFilesResponse(files);
+    }
+
+    @Override
+    public GetDocumentByIdResponse getDocumentById(String id) {
+        File file = fileRepository.findById(id).get();
+        return new GetDocumentByIdResponse(file);
     }
 }

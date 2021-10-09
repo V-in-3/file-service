@@ -4,8 +4,6 @@ import com.example.file.service.dto.*;
 import com.example.file.service.filter.FileFilter;
 import org.springframework.data.domain.Pageable;
 
-import java.io.IOException;
-
 public interface FileService {
 
     UploadFileResponse upload(UploadFileRequest request);
@@ -18,5 +16,7 @@ public interface FileService {
 
     GetFilesByFilterResponse getAllByFilter(FileFilter filter, Pageable pageable);
 
-    GetAllFilesResponse getAllFilesWithoutPagebale() throws IOException;
+    GetAllFilesResponse getAllFilesWithoutPagebale();
+
+    GetDocumentByIdResponse getDocumentById(String id);
 }

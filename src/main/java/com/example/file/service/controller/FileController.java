@@ -8,8 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-
 import static com.example.file.service.Constants.BASE_URI;
 
 @Slf4j
@@ -36,19 +34,13 @@ public class FileController {
     }
 
     @PostMapping("/{id}/tags")
-    public AssignTagsResponse assignTags(
-            @PathVariable String id,
-            @Validated @RequestBody AssignTagsRequest request
-    ) {
+    public AssignTagsResponse assignTags(@PathVariable String id, @Validated @RequestBody AssignTagsRequest request) {
         log.debug("[d] Assigning tags({}) to file with id '{}'", request.getTags(), id);
         return fileService.assignTags(id, request);
     }
 
     @DeleteMapping("/{id}/tags")
-    public RemoveTagsResponse removeTags(
-            @PathVariable String id,
-            @Validated @RequestBody RemoveTagsRequest request
-    ) {
+    public RemoveTagsResponse removeTags(@PathVariable String id, @Validated @RequestBody RemoveTagsRequest request) {
         log.debug("[d] Removing tags({}) for file with id '{}'", request.getTags(), id);
         return fileService.removeTags(id, request);
     }
@@ -60,8 +52,14 @@ public class FileController {
     }
 
     @GetMapping(value = "/all")
-    public GetAllFilesResponse getAll() throws IOException {
+    public GetAllFilesResponse getAll() {
         log.debug("[d] Getting all files");
         return fileService.getAllFilesWithoutPagebale();
+    }
+
+    @GetMapping(value = "/{id}")
+    public GetDocumentByIdResponse GetDocumentById(@PathVariable String id) {
+        log.debug("[d] Getting file by {}", id);
+        return fileService.getDocumentById(id);
     }
 }

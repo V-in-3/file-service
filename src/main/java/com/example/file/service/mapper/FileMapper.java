@@ -4,7 +4,7 @@ import com.example.file.service.dto.UploadFileRequest;
 import com.example.file.service.model.File;
 import org.mapstruct.*;
 
-import java.util.List;
+import java.util.Set;
 
 import static org.mapstruct.NullValueCheckStrategy.ALWAYS;
 import static org.mapstruct.NullValueMappingStrategy.RETURN_DEFAULT;
@@ -21,10 +21,10 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 )
 public abstract class FileMapper {
 
-    public static final List<String> VIDEO_FILE_EXTENSIONS = List.of("mp4");
-    public static final List<String> AUDIO_FILE_EXTENSIONS = List.of("mp3");
-    public static final List<String> DOCUMENT_FILE_EXTENSIONS = List.of("doc", "docx", "pdf", "csv", "xls");
-    public static final List<String> IMAGE_FILE_EXTENSIONS = List.of("gif", "png", "jpg", "jpeg");
+    public static final Set<String> VIDEO_FILE_EXTENSIONS = Set.of("mp4");
+    public static final Set<String> AUDIO_FILE_EXTENSIONS = Set.of("mp3");
+    public static final Set<String> DOCUMENT_FILE_EXTENSIONS = Set.of("doc", "docx", "pdf", "csv", "xls");
+    public static final Set<String> IMAGE_FILE_EXTENSIONS = Set.of("gif", "png", "jpg", "jpeg");
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "request.name")
@@ -33,12 +33,12 @@ public abstract class FileMapper {
     public abstract File toFile(String id, UploadFileRequest request);
 
     @Named("toTags")
-    public List<String> createTags(UploadFileRequest request) {
+    public Set<String> createTags(UploadFileRequest request) {
         if (request.getName() != null && !request.getName().isBlank()) {
             String[] splitFileName = request.getName().split("\\.");
             if (splitFileName.length == 2) {
                 Tag tag = getTagByFileExtension(splitFileName[1]);
-                return tag != null ? List.of(tag.name()) : null;
+                return tag != null ? Set.of(tag.name()) : null;
             }
         }
         return null;
